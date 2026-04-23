@@ -1,0 +1,47 @@
+{
+  "expo": {
+    "name": "AlimConnect",
+    "slug": "alimconnect",
+    "scheme": "alimconnect",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#1F5134"
+    },
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.alimconnect.app"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#1F5134"
+      },
+      "package": "com.alimconnect.app",
+      "edgeToEdgeEnabled": true
+    },
+    "web": {
+      "favicon": "./assets/favicon.png",
+      "bundler": "metro"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-font",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "L'app accède à vos photos pour les produits.",
+          "cameraPermission": "L'app utilise la caméra pour photographier les produits."
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}

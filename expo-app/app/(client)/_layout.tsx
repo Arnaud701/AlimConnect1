@@ -1,0 +1,13 @@
+import React from 'react';
+import { View } from 'react-native';
+import { Stack } from 'expo-router';
+import BottomTabBar from '@/components/BottomTabBar';
+
+export default function ClientLayout() {
+  return (
+    <View style={{ flex: 1, backgroundColor: '#FCFCFC' }}>
+      <Stack screenOptions={{ headerShown: false }} />
+      <BottomTabBar mode="client" />
+    </View>
+  );
+}
