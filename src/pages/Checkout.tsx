@@ -1,14 +1,14 @@
 import { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { ArrowLeft, CheckCircle2, ExternalLink, ShieldCheck, Star, Clock } from "lucide-react";
+import { ArrowLeft, CheckCircle2, ExternalLink, ShieldCheck, Star, Clock, AlertTriangle } from "lucide-react";
 import MobileLayout from "@/components/MobileLayout";
 import { saveOrdersToDB, upsertRating, Product } from "@/lib/mock-data";
 import { clearCart } from "@/lib/cart";
 import { useAuth } from "@/context/AuthContext";
 import { formatPriceFcfa } from "@/lib/utils";
 
-const WAVE_MERCHANT_CODE = "221766470572";
-const OM_MERCHANT_CODE   = "770902489";
+const WAVE_BASE_URL    = "https://pay.wave.com/m/M_sn_qApmbNWkrVuw/c/sn/";
+const OM_MERCHANT_CODE = "770902489";
 
 interface CheckoutItem { product: Product; quantity: number }
 interface RatingTarget  { sellerId: string; sellerName: string; given: number }
@@ -22,10 +22,14 @@ const Checkout = () => {
 
   const items: CheckoutItem[] = location.state?.items ?? [];
   const total: number         = items.reduce((s, i) => s + i.product.reducedPrice * i.quantity, 0);
+  const commission: number    = Math.round(total * 0.05);
+  const sellerAmount: number  = total - commission;
 
-  const [step,    setStep]    = useState<Step>("payment");
-  const [method,  setMethod]  = useState<"wave" | "om" | null>(null);
-  const [saving,  setSaving]  = useState(false);
+  const [step,         setStep]        = useState<Step>("payment");
+  const [method,       setMethod]      = useState<"wave" | "om" | null>(null);
+  const [saving,       setSaving]      = useState(false);
+  const [paidAmount,   setPaidAmount]  = useState("");
+  const [amountError,  setAmountError] = useState<string | null>(null);
   const [ratings, setRatings] = useState<RatingTarget[]>(() => {
     const map = new Map<string, string>();
     items.forEach((i) => map.set(i.product.sellerId, i.product.name));
@@ -41,17 +45,37 @@ const Checkout = () => {
     return null;
   }
 
-  const waveUrl = `https://pay.wave.com/m/${WAVE_MERCHANT_CODE}?amount=${Math.round(total)}&currency=XOF`;
+  const waveUrl = `${WAVE_BASE_URL}?amount=${Math.round(total)}&currency=XOF`;
   const omUssd  = `*144*1*${Math.round(total)}*${OM_MERCHANT_CODE}#`;
 
   const handlePayWith = (m: "wave" | "om") => {
     setMethod(m);
+    setPaidAmount("");
+    setAmountError(null);
     if (m === "wave") {
       window.open(waveUrl, "_blank");
     } else {
       window.open(`tel:${omUssd}`);
     }
     setTimeout(() => setStep("confirm"), 800);
+  };
+
+  const validateAndConfirm = () => {
+    const paid = Number(paidAmount.trim());
+    if (!paidAmount.trim() || isNaN(paid)) {
+      setAmountError("Veuillez entrer le montant que vous avez payé.");
+      return;
+    }
+    if (paid < total) {
+      setAmountError("Solde insuffisant. Le montant payé est inférieur au total de la commande.");
+      return;
+    }
+    if (paid > total) {
+      setAmountError("Le montant est supérieur au prix du produit, veuillez vérifier.");
+      return;
+    }
+    setAmountError(null);
+    handleConfirmPayment();
   };
 
   const handleConfirmPayment = async () => {
@@ -155,13 +179,42 @@ const Checkout = () => {
                 <span className="font-semibold tabular-nums">{formatPriceFcfa(item.product.reducedPrice * item.quantity)}</span>
               </div>
             ))}
-            <div className="pt-3 border-t flex justify-between">
-              <span className="font-bold text-foreground">Total</span>
-              <span className="font-bold text-primary tabular-nums text-lg">{formatPriceFcfa(total)}</span>
+            <div className="pt-3 border-t space-y-2">
+              <div className="flex justify-between">
+                <span className="font-bold text-foreground">Total payé</span>
+                <span className="font-bold text-primary tabular-nums text-lg">{formatPriceFcfa(total)}</span>
+              </div>
+              <div className="flex justify-between text-xs text-muted-foreground">
+                <span>Vendeur (95%)</span>
+                <span className="text-green-600 font-semibold tabular-nums">{formatPriceFcfa(sellerAmount)}</span>
+              </div>
+              <div className="flex justify-between text-xs text-muted-foreground">
+                <span>Frais AlimConnect (5%)</span>
+                <span className="tabular-nums">{formatPriceFcfa(commission)}</span>
+              </div>
             </div>
           </div>
 
-          <button onClick={handleConfirmPayment} disabled={saving}
+          <div className="space-y-2">
+            <label className="text-xs font-semibold text-foreground px-1">
+              Montant que vous avez payé (F CFA)
+            </label>
+            <input
+              type="number"
+              value={paidAmount}
+              onChange={(e) => { setPaidAmount(e.target.value); setAmountError(null); }}
+              placeholder={`Montant attendu : ${Math.round(total)}`}
+              className="w-full border rounded-2xl px-4 py-3 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-primary"
+            />
+            {amountError && (
+              <div className="flex items-start gap-2 bg-red-50 border border-red-200 rounded-xl p-3">
+                <AlertTriangle className="w-4 h-4 text-red-500 flex-shrink-0 mt-0.5" />
+                <p className="text-xs text-red-700">{amountError}</p>
+              </div>
+            )}
+          </div>
+
+          <button onClick={validateAndConfirm} disabled={saving}
             className="w-full flex items-center justify-center gap-2 bg-green-500 text-white py-4 rounded-2xl font-semibold text-base shadow-lg shadow-green-500/20 disabled:opacity-60 active:scale-[0.98] transition-transform">
             <ShieldCheck className="w-5 h-5" />
             {saving ? "Enregistrement..." : "J'ai effectué le paiement"}
@@ -201,9 +254,21 @@ const Checkout = () => {
               <p className="text-sm font-bold text-primary tabular-nums flex-shrink-0">{formatPriceFcfa(item.product.reducedPrice * item.quantity)}</p>
             </div>
           ))}
-          <div className="pt-3 border-t flex justify-between items-center">
-            <span className="font-bold text-foreground">Total à payer</span>
-            <span className="text-2xl font-bold text-primary tabular-nums">{formatPriceFcfa(total)}</span>
+          <div className="pt-3 border-t space-y-2">
+            <div className="flex justify-between items-center">
+              <span className="font-bold text-foreground">Total à payer</span>
+              <span className="text-2xl font-bold text-primary tabular-nums">{formatPriceFcfa(total)}</span>
+            </div>
+            <div className="bg-muted/50 rounded-xl p-3 space-y-1.5 text-xs">
+              <div className="flex justify-between text-muted-foreground">
+                <span>Reversé au vendeur (95%)</span>
+                <span className="font-semibold text-green-600 tabular-nums">{formatPriceFcfa(sellerAmount)}</span>
+              </div>
+              <div className="flex justify-between text-muted-foreground">
+                <span>Frais de service AlimConnect (5%)</span>
+                <span className="font-semibold tabular-nums">{formatPriceFcfa(commission)}</span>
+              </div>
+            </div>
           </div>
         </div>
 

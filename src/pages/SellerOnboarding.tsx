@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Store, MapPin, Check, ImagePlus } from "lucide-react";
+import { Store, MapPin, Check, ImagePlus, Wallet } from "lucide-react";
 import MobileLayout from "@/components/MobileLayout";
 import { upsertSellerProfile, uploadProductImageWeb } from "@/lib/mock-data";
 import { useAuth } from "@/context/AuthContext";
@@ -24,7 +24,7 @@ const SellerOnboarding = () => {
   const navigate = useNavigate();
   const { user, loading } = useAuth();
 
-  const [form, setForm] = useState({ name: "", type: "", address: "" });
+  const [form, setForm] = useState({ name: "", type: "", address: "", paymentMethod: "", paymentNumber: "" });
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -52,6 +52,8 @@ const SellerOnboarding = () => {
     if (!form.type) { toast.error("Veuillez choisir un type de commerce."); return; }
     if (!form.address.trim()) { toast.error("Veuillez entrer l'adresse de votre boutique."); return; }
     if (!imageFile) { toast.error("Veuillez ajouter une photo de votre boutique."); return; }
+    if (!form.paymentMethod) { toast.error("Veuillez choisir un moyen de paiement."); return; }
+    if (!form.paymentNumber.trim()) { toast.error("Veuillez entrer votre numéro de compte."); return; }
 
     setSubmitting(true);
     setGeocoding(true);
@@ -68,6 +70,8 @@ const SellerOnboarding = () => {
         lat: coords.lat,
         lng: coords.lng,
         imageUrl,
+        paymentMethod: form.paymentMethod,
+        paymentNumber: form.paymentNumber.trim(),
       });
       toast.success("Boutique configurée !");
       navigate("/seller/dashboard", { replace: true });
@@ -141,6 +145,33 @@ const SellerOnboarding = () => {
               className="w-full px-4 py-3 rounded-2xl border bg-card text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
             />
             <p className="text-[10px] text-muted-foreground">Soyez précis pour apparaître sur la carte</p>
+          </div>
+
+          {/* Moyen de paiement */}
+          <div className="space-y-1.5">
+            <label className="text-xs font-semibold text-foreground flex items-center gap-1">
+              <Wallet className="w-3.5 h-3.5" /> Compte de réception des paiements
+            </label>
+            <div className="flex gap-3">
+              <button type="button" onClick={() => update("paymentMethod", "wave")}
+                className={`flex-1 py-3 rounded-2xl text-sm font-semibold border-2 transition-all ${form.paymentMethod === "wave" ? "border-[#1352DE] bg-[#1352DE]/10 text-[#1352DE]" : "border-border text-muted-foreground"}`}>
+                Wave
+              </button>
+              <button type="button" onClick={() => update("paymentMethod", "orange_money")}
+                className={`flex-1 py-3 rounded-2xl text-sm font-semibold border-2 transition-all ${form.paymentMethod === "orange_money" ? "border-orange-500 bg-orange-50 text-orange-600" : "border-border text-muted-foreground"}`}>
+                Orange Money
+              </button>
+            </div>
+            {form.paymentMethod && (
+              <input
+                type="tel"
+                value={form.paymentNumber}
+                onChange={(e) => update("paymentNumber", e.target.value)}
+                placeholder={form.paymentMethod === "wave" ? "Ex: 77 123 45 67" : "Ex: 77 123 45 67"}
+                className="w-full px-4 py-3 rounded-2xl border bg-card text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 mt-2"
+              />
+            )}
+            <p className="text-[10px] text-muted-foreground">Ce numéro recevra vos paiements (95% de chaque vente)</p>
           </div>
 
           <button type="submit" disabled={submitting}

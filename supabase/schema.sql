@@ -17,16 +17,18 @@ create table if not exists profiles (
 
 -- 3. Sellers (profil vendeur, id = profiles.id)
 create table if not exists sellers (
-  id           uuid references profiles(id) on delete cascade primary key,
-  name         text not null,
-  type         text check (type in ('supermarché', 'supérette', 'boulangerie', 'épicerie')),
-  address      text,
-  lat          double precision,
-  lng          double precision,
-  rating       double precision default 0,
-  review_count int default 0,
-  image_url    text,
-  created_at   timestamptz default now()
+  id              uuid references profiles(id) on delete cascade primary key,
+  name            text not null,
+  type            text check (type in ('supermarché', 'supérette', 'boulangerie', 'épicerie')),
+  address         text,
+  lat             double precision,
+  lng             double precision,
+  rating          double precision default 0,
+  review_count    int default 0,
+  image_url       text,
+  payment_method  text check (payment_method in ('wave', 'orange_money')),
+  payment_number  text,
+  created_at      timestamptz default now()
 );
 
 -- 4. Products
@@ -54,6 +56,16 @@ create table if not exists cart_items (
   unique(user_id, product_id)
 );
 
+-- 6. Notifications vendeurs
+create table if not exists notifications (
+  id         uuid default uuid_generate_v4() primary key,
+  seller_id  uuid references profiles(id) on delete cascade not null,
+  title      text not null,
+  body       text not null,
+  read       boolean default false,
+  created_at timestamptz default now()
+);
+
 -- ── Row Level Security ──────────────────────────────────────────
 
 alter table profiles   enable row level security;
@@ -79,6 +91,10 @@ create policy "products_delete_seller" on products for delete using (auth.uid() 
 
 -- Cart
 create policy "cart_all_own" on cart_items for all using (auth.uid() = user_id);
+
+-- Notifications
+alter table notifications enable row level security;
+create policy "notifications_seller_own" on notifications for all using (auth.uid() = seller_id);
 
 -- ── Storage bucket ─────────────────────────────────────────────
 -- Dans Supabase Dashboard > Storage :

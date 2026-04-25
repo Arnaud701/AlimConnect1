@@ -1,13 +1,18 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Plus, Clock, Trash2, LogOut, Pencil } from "lucide-react";
+import { Plus, Clock, Trash2, LogOut, Pencil, Bell, X } from "lucide-react";
 import { formatPriceFcfa } from "@/lib/utils";
 
 import MobileLayout from "@/components/MobileLayout";
 import MobileHeader from "@/components/MobileHeader";
 import ScrollReveal from "@/components/ScrollReveal";
-import { fetchProductsBySellerFromDB, deleteProductFromDB, getSellerStats, getDaysUntilExpiry, getExpiryLabel, getDiscountPercentage, Product } from "@/lib/mock-data";
+import {
+  fetchProductsBySellerFromDB, deleteProductFromDB, getSellerStats,
+  getDaysUntilExpiry, getExpiryLabel, getDiscountPercentage, Product,
+  fetchSellerNotifications, markNotificationsRead, SellerNotification,
+} from "@/lib/mock-data";
 import { useAuth } from "@/context/AuthContext";
+import { supabase } from "@/lib/supabase";
 
 const SellerDashboard = () => {
   const navigate = useNavigate();
@@ -15,6 +20,10 @@ const SellerDashboard = () => {
   const [myProducts, setMyProducts] = useState<Product[]>([]);
   const [loadingProducts, setLoadingProducts] = useState(true);
   const [stats, setStats] = useState({ sales: 0, revenue: 0, rating: 0 });
+  const [notifications, setNotifications] = useState<SellerNotification[]>([]);
+  const [showNotifs, setShowNotifs] = useState(false);
+
+  const unreadCount = notifications.filter((n) => !n.read).length;
 
   useEffect(() => {
     if (loading) return;
@@ -25,12 +34,43 @@ const SellerDashboard = () => {
     Promise.all([
       fetchProductsBySellerFromDB(user.id),
       getSellerStats(user.id),
-    ]).then(([products, s]) => {
+      fetchSellerNotifications(user.id),
+    ]).then(([products, s, notifs]) => {
       setMyProducts(products);
       setStats(s);
+      setNotifications(notifs);
       setLoadingProducts(false);
     });
+
+    // Mise à jour temps réel des stats quand une vente arrive
+    const ordersChannel = supabase
+      .channel(`seller-orders-${user.id}`)
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "orders", filter: `seller_id=eq.${user.id}` },
+        () => { getSellerStats(user.id).then(setStats); }
+      )
+      .subscribe();
+
+    // Mise à jour temps réel des notifications
+    const notifsChannel = supabase
+      .channel(`seller-notifs-${user.id}`)
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "notifications", filter: `seller_id=eq.${user.id}` },
+        () => { fetchSellerNotifications(user.id).then(setNotifications); }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(ordersChannel);
+      supabase.removeChannel(notifsChannel);
+    };
   }, [loading, user, navigate]);
+
+  const handleOpenNotifs = async () => {
+    setShowNotifs(true);
+    if (unreadCount > 0 && user) {
+      await markNotificationsRead(user.id);
+      setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+    }
+  };
 
   const onLogout = async () => {
     await signOut();
@@ -60,6 +100,14 @@ const SellerDashboard = () => {
               <LogOut className="w-4 h-4" />
               Déconnexion
             </button>
+            <button type="button" onClick={handleOpenNotifs} className="relative w-9 h-9 rounded-xl bg-muted flex items-center justify-center">
+              <Bell className="w-5 h-5 text-foreground" />
+              {unreadCount > 0 && (
+                <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
+                  {unreadCount > 9 ? "9+" : unreadCount}
+                </span>
+              )}
+            </button>
             <Link
               to="/seller/add"
               className="w-9 h-9 rounded-xl bg-primary flex items-center justify-center active:scale-90 transition-transform"
@@ -69,6 +117,38 @@ const SellerDashboard = () => {
           </div>
         }
       />
+
+      {/* Panneau notifications */}
+      {showNotifs && (
+        <div className="fixed inset-0 z-50 bg-black/40 flex items-end" onClick={() => setShowNotifs(false)}>
+          <div className="w-full bg-background rounded-t-3xl max-h-[75vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between px-5 py-4 border-b">
+              <h2 className="font-bold text-foreground text-base">Notifications</h2>
+              <button onClick={() => setShowNotifs(false)} className="w-8 h-8 rounded-full bg-muted flex items-center justify-center">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="overflow-y-auto flex-1 divide-y">
+              {notifications.length === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-10">Aucune notification</p>
+              ) : (
+                notifications.map((n) => (
+                  <div key={n.id} className={`px-5 py-4 space-y-1 ${!n.read ? "bg-primary/5" : ""}`}>
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="text-sm font-semibold text-foreground">{n.title}</p>
+                      {!n.read && <span className="w-2 h-2 bg-primary rounded-full flex-shrink-0" />}
+                    </div>
+                    <p className="text-xs text-muted-foreground whitespace-pre-line">{n.body}</p>
+                    <p className="text-[10px] text-muted-foreground">
+                      {new Date(n.createdAt).toLocaleString("fr-SN", { dateStyle: "short", timeStyle: "short" })}
+                    </p>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="px-4 py-4 space-y-4">
         {/* Stats row */}

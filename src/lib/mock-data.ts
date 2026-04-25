@@ -274,7 +274,7 @@ export function haversineKm(lat1: number, lng1: number, lat2: number, lng2: numb
 
 export async function upsertSellerProfile(
   userId: string,
-  data: { name: string; type: string; address: string; lat: number; lng: number; imageUrl: string },
+  data: { name: string; type: string; address: string; lat: number; lng: number; imageUrl: string; paymentMethod?: string; paymentNumber?: string },
 ): Promise<void> {
   const { error } = await supabase.from("sellers").upsert({
     id: userId,
@@ -284,6 +284,8 @@ export async function upsertSellerProfile(
     lat: data.lat,
     lng: data.lng,
     image_url: data.imageUrl,
+    ...(data.paymentMethod && { payment_method: data.paymentMethod }),
+    ...(data.paymentNumber && { payment_number: data.paymentNumber }),
   }, { onConflict: "id" });
   if (error) throw new Error(error.message);
 }
@@ -330,6 +332,55 @@ export async function saveOrdersToDB(
   }));
   const { error } = await supabase.from("orders").insert(rows);
   if (error) throw new Error(error.message);
+
+  // Notifications par vendeur
+  const bySellerMap = new Map<string, { product: Product; quantity: number }[]>();
+  items.forEach((item) => {
+    const list = bySellerMap.get(item.product.sellerId) ?? [];
+    list.push(item);
+    bySellerMap.set(item.product.sellerId, list);
+  });
+
+  await Promise.all(
+    Array.from(bySellerMap.entries()).map(([sellerId, sellerItems]) => {
+      const lines = sellerItems
+        .map((i) => `• ${i.product.name} ×${i.quantity} — ${i.product.reducedPrice * i.quantity} F CFA`)
+        .join("\n");
+      const total = sellerItems.reduce((s, i) => s + i.product.reducedPrice * i.quantity, 0);
+      const sellerAmount = Math.round(total * 0.95);
+      return createSellerNotification(
+        sellerId,
+        "Nouvelle vente !",
+        `Vous avez une nouvelle commande :\n${lines}\n\nMontant net (95%) : ${sellerAmount} F CFA\nLe paiement sera effectué dans votre compte dans les heures qui suivent.`,
+      );
+    }),
+  );
+}
+
+export interface SellerNotification {
+  id: string;
+  title: string;
+  body: string;
+  read: boolean;
+  createdAt: string;
+}
+
+export async function createSellerNotification(sellerId: string, title: string, body: string): Promise<void> {
+  await supabase.from("notifications").insert({ seller_id: sellerId, title, body });
+}
+
+export async function fetchSellerNotifications(sellerId: string): Promise<SellerNotification[]> {
+  const { data } = await supabase
+    .from("notifications")
+    .select("*")
+    .eq("seller_id", sellerId)
+    .order("created_at", { ascending: false })
+    .limit(30);
+  return (data ?? []).map((n) => ({ id: n.id, title: n.title, body: n.body, read: n.read, createdAt: n.created_at }));
+}
+
+export async function markNotificationsRead(sellerId: string): Promise<void> {
+  await supabase.from("notifications").update({ read: true }).eq("seller_id", sellerId).eq("read", false);
 }
 
 export async function getSellerStats(sellerId: string): Promise<{ sales: number; revenue: number; rating: number }> {

@@ -6,6 +6,7 @@ import MobileHeader from "@/components/MobileHeader";
 import { fetchClientOrders, Order } from "@/lib/mock-data";
 import { useAuth } from "@/context/AuthContext";
 import { formatPriceFcfa } from "@/lib/utils";
+import { supabase } from "@/lib/supabase";
 
 function groupByDate(orders: Order[]): Record<string, Order[]> {
   return orders.reduce<Record<string, Order[]>>((acc, o) => {
@@ -36,7 +37,17 @@ const ClientTransactions = () => {
   useEffect(() => {
     if (loading) return;
     if (!user || user.role !== "client") { navigate("/auth/client", { replace: true }); return; }
+
     fetchClientOrders(user.id).then((o) => { setOrders(o); setFetching(false); });
+
+    const channel = supabase
+      .channel(`client-orders-${user.id}`)
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "orders", filter: `client_id=eq.${user.id}` },
+        () => { fetchClientOrders(user.id).then(setOrders); }
+      )
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
   }, [loading, user, navigate]);
 
   const totalSpent  = orders.reduce((s, o) => s + o.totalAmount, 0);
