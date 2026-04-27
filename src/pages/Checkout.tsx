@@ -7,8 +7,8 @@ import { clearCart } from "@/lib/cart";
 import { useAuth } from "@/context/AuthContext";
 import { formatPriceFcfa } from "@/lib/utils";
 
-const WAVE_BASE_URL    = "https://pay.wave.com/m/M_sn_qApmbNWkrVuw/c/sn/";
-const OM_MERCHANT_CODE = "770902489";
+const WAVE_BASE_URL = "https://pay.wave.com/m/M_sn_qApmbNWkrVuw/c/sn/";
+const OM_QR_IMAGE   = "/om-qr.jpeg";
 
 interface CheckoutItem { product: Product; quantity: number }
 interface RatingTarget  { sellerId: string; sellerName: string; given: number }
@@ -30,6 +30,7 @@ const Checkout = () => {
   const [saving,       setSaving]      = useState(false);
   const [paidAmount,   setPaidAmount]  = useState("");
   const [amountError,  setAmountError] = useState<string | null>(null);
+  const [showOMQR,     setShowOMQR]    = useState(false);
   const [ratings, setRatings] = useState<RatingTarget[]>(() => {
     const map = new Map<string, string>();
     items.forEach((i) => map.set(i.product.sellerId, i.product.name));
@@ -46,7 +47,6 @@ const Checkout = () => {
   }
 
   const waveUrl = `${WAVE_BASE_URL}?amount=${Math.round(total)}&currency=XOF`;
-  const omUssd  = `*144*1*${Math.round(total)}*${OM_MERCHANT_CODE}#`;
 
   const handlePayWith = (m: "wave" | "om") => {
     setMethod(m);
@@ -54,10 +54,10 @@ const Checkout = () => {
     setAmountError(null);
     if (m === "wave") {
       window.open(waveUrl, "_blank");
+      setTimeout(() => setStep("confirm"), 800);
     } else {
-      window.open(`tel:${omUssd}`);
+      setShowOMQR(true);
     }
-    setTimeout(() => setStep("confirm"), 800);
   };
 
   const validateAndConfirm = () => {
@@ -167,8 +167,11 @@ const Checkout = () => {
             <p className="text-xs text-amber-700">
               {method === "wave"
                 ? "Vérifiez l'application Wave et validez le paiement."
-                : `Composez ${omUssd} sur votre téléphone pour payer via Orange Money.`}
+                : "Scannez le QR code Orange Money ci-dessous avec votre application."}
             </p>
+            {method === "om" && (
+              <img src={OM_QR_IMAGE} alt="QR Code Orange Money" className="w-40 h-40 object-contain mx-auto rounded-xl border mt-3" />
+            )}
           </div>
 
           <div className="bg-card rounded-2xl border p-5 space-y-3">
@@ -222,6 +225,47 @@ const Checkout = () => {
 
           <button onClick={() => setStep("payment")} className="w-full text-sm text-muted-foreground py-2 text-center">
             Changer de méthode
+          </button>
+        </div>
+      </MobileLayout>
+    );
+  }
+
+  // ── MODAL QR CODE ORANGE MONEY ───────────────────────────────────
+  if (showOMQR) {
+    return (
+      <MobileLayout mode="client">
+        <header className="sticky top-0 z-40 bg-card/90 backdrop-blur-lg border-b">
+          <div className="flex items-center gap-3 h-14 px-4">
+            <button onClick={() => setShowOMQR(false)} className="w-9 h-9 rounded-xl bg-muted flex items-center justify-center">
+              <ArrowLeft className="w-5 h-5" />
+            </button>
+            <h1 className="text-lg font-bold text-foreground">Orange Money</h1>
+          </div>
+        </header>
+        <div className="px-4 py-8 space-y-6 flex flex-col items-center">
+          <div className="text-center space-y-1">
+            <p className="text-sm font-semibold text-foreground">Scannez ce QR code avec votre app Orange Money</p>
+            <p className="text-xs text-muted-foreground">Montant à payer : <span className="font-bold text-orange-500">{formatPriceFcfa(total)}</span></p>
+          </div>
+          <div className="border-4 border-orange-500 rounded-3xl p-3 bg-white shadow-lg shadow-orange-500/20">
+            <img src={OM_QR_IMAGE} alt="QR Code Orange Money" className="w-56 h-56 object-contain rounded-xl" />
+          </div>
+          <div className="bg-orange-50 border border-orange-200 rounded-2xl p-4 w-full space-y-1">
+            <p className="text-xs font-semibold text-orange-800">Comment payer ?</p>
+            <ol className="text-xs text-orange-700 space-y-1 list-decimal list-inside">
+              <li>Ouvrez l'application Orange Money</li>
+              <li>Appuyez sur "Scanner" ou "QR Code"</li>
+              <li>Scannez ce code et confirmez le paiement</li>
+            </ol>
+          </div>
+          <button
+            onClick={() => { setShowOMQR(false); setStep("confirm"); }}
+            className="w-full bg-orange-500 text-white py-4 rounded-2xl font-semibold shadow-lg shadow-orange-500/20 active:scale-[0.98] transition-transform">
+            J'ai scanné et payé
+          </button>
+          <button onClick={() => setShowOMQR(false)} className="text-sm text-muted-foreground">
+            Annuler
           </button>
         </div>
       </MobileLayout>
@@ -300,7 +344,7 @@ const Checkout = () => {
           </div>
           <div className="flex-1 text-left">
             <p className="font-bold text-base">Orange Money</p>
-            <p className="text-xs text-white/80">USSD · {omUssd}</p>
+            <p className="text-xs text-white/80">Scanner le QR code</p>
           </div>
           <ExternalLink className="w-5 h-5 text-white/70 flex-shrink-0" />
         </button>
