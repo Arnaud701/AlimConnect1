@@ -41,25 +41,6 @@ const Cart = () => {
     });
   };
 
-  const setGivenRating = (sellerId: string, value: number) => {
-    setRatingTargets((prev) => prev?.map((t) => t.sellerId === sellerId ? { ...t, given: value } : t) ?? null);
-  };
-
-  const handleSubmitRatings = async () => {
-    if (!user || !ratingTargets) return;
-    setSubmittingRatings(true);
-    try {
-      await Promise.all(
-        ratingTargets.filter((t) => t.given > 0).map((t) => upsertRating(user.id, t.sellerId, t.given)),
-      );
-    } catch {
-      // best-effort
-    } finally {
-      setSubmittingRatings(false);
-      navigate("/marketplace", { replace: true });
-    }
-  };
-
   return (
     <MobileLayout mode="client">
       <MobileHeader title="Mon panier" />
