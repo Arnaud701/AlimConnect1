@@ -7,8 +7,11 @@ import { clearCart } from "@/lib/cart";
 import { useAuth } from "@/context/AuthContext";
 import { formatPriceFcfa } from "@/lib/utils";
 
-const WAVE_BASE_URL = "https://pay.wave.com/m/M_sn_qApmbNWkrVuw/c/sn/";
-const OM_QR_IMAGE   = "/om-qr.jpeg";
+const WAVE_BASE_URL    = "https://pay.wave.com/m/M_sn_qApmbNWkrVuw/c/sn/";
+const OM_QR_IMAGE      = "/om-qr.jpeg";
+const OM_MERCHANT_CODE = "770902489";
+
+const isMobile = () => /Android|iPhone|iPad|iPod|Opera Mini|IEMobile|WPDesktop/i.test(navigator.userAgent);
 
 interface CheckoutItem { product: Product; quantity: number }
 interface RatingTarget  { sellerId: string; sellerName: string; given: number }
@@ -47,6 +50,7 @@ const Checkout = () => {
   }
 
   const waveUrl = `${WAVE_BASE_URL}?amount=${Math.round(total)}&currency=XOF`;
+  const omUssd  = `*144*1*${Math.round(total)}*${OM_MERCHANT_CODE}#`;
 
   const handlePayWith = (m: "wave" | "om") => {
     setMethod(m);
@@ -54,6 +58,9 @@ const Checkout = () => {
     setAmountError(null);
     if (m === "wave") {
       window.open(waveUrl, "_blank");
+      setTimeout(() => setStep("confirm"), 800);
+    } else if (isMobile()) {
+      window.open(`tel:${omUssd}`);
       setTimeout(() => setStep("confirm"), 800);
     } else {
       setShowOMQR(true);
@@ -167,9 +174,11 @@ const Checkout = () => {
             <p className="text-xs text-amber-700">
               {method === "wave"
                 ? "Vérifiez l'application Wave et validez le paiement."
-                : "Scannez le QR code Orange Money ci-dessous avec votre application."}
+                : isMobile()
+                  ? "Complétez le paiement via l'application Orange Money ouverte sur votre téléphone."
+                  : "Scannez le QR code Orange Money ci-dessous avec votre application."}
             </p>
-            {method === "om" && (
+            {method === "om" && !isMobile() && (
               <img src={OM_QR_IMAGE} alt="QR Code Orange Money" className="w-40 h-40 object-contain mx-auto rounded-xl border mt-3" />
             )}
           </div>
