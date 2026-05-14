@@ -92,7 +92,10 @@ const SellerAddProduct = () => {
       getSubscription(user.id),
     ]);
 
-    const needsSub = sub.status === "none" || sub.status === "expired";
+    const needsSub =
+      sub.status === "none" ||
+      sub.status === "expired" ||
+      (sub.status === "trial" && products.length === 0);
     if (products.length < 3 && needsSub) {
       pendingSubmitRef.current = true;
       setShowSubModal(true);
