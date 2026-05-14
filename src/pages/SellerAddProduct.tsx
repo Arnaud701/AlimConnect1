@@ -2,11 +2,10 @@ import { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, ImagePlus, Check } from "lucide-react";
 import MobileLayout from "@/components/MobileLayout";
+import SubscriptionModal from "@/components/SubscriptionModal";
 import { insertProductToDB, uploadProductImageWeb, fetchProductsBySellerFromDB } from "@/lib/mock-data";
 import { useAuth } from "@/context/AuthContext";
 import { toast } from "sonner";
-import { getSubscription } from "@/lib/subscription";
-import TrialWelcomeModal from "@/components/TrialWelcomeModal";
 
 const categories = ["Boulangerie", "Produits laitiers", "Fruits & Légumes", "Plats préparés", "Viandes", "Boissons", "Autre"];
 
@@ -87,16 +86,10 @@ const SellerAddProduct = () => {
     if (!imageFile) { toast.error("Veuillez ajouter une photo du produit."); return; }
     if (!form.category) { toast.error("Veuillez choisir une catégorie."); return; }
 
-    const [products, sub] = await Promise.all([
-      fetchProductsBySellerFromDB(user.id),
-      getSubscription(user.id),
-    ]);
+    const products = await fetchProductsBySellerFromDB(user.id);
 
-    const needsSub =
-      sub.status === "none" ||
-      sub.status === "expired" ||
-      (sub.status === "trial" && products.length === 0);
-    if (products.length < 3 && needsSub) {
+    // Pour les 3 premiers produits, montrer la page essai / abonnement
+    if (products.length < 3) {
       pendingSubmitRef.current = true;
       setShowSubModal(true);
       return;
@@ -120,7 +113,13 @@ const SellerAddProduct = () => {
       : 0;
 
   if (showSubModal) {
-    return <TrialWelcomeModal sellerId={user.id} onDone={handleSubDone} />;
+    return (
+      <SubscriptionModal
+        sellerId={user.id}
+        onDone={handleSubDone}
+        onClose={() => { setShowSubModal(false); pendingSubmitRef.current = false; }}
+      />
+    );
   }
 
   return (
@@ -135,83 +134,83 @@ const SellerAddProduct = () => {
       </header>
 
       <div className="px-4 py-4">
-          <form onSubmit={handleSubmit} className="space-y-5">
-            {/* Image */}
-            <div className="border-2 border-dashed rounded-2xl p-6 text-center transition-colors">
-              <label htmlFor="product-image" className="cursor-pointer">
-                {imagePreview ? (
-                  <img src={imagePreview} alt="Aperçu" className="mx-auto h-28 w-28 rounded-3xl object-cover" />
-                ) : (
-                  <>
-                    <ImagePlus className="w-8 h-8 text-muted-foreground mx-auto" />
-                    <p className="text-xs text-muted-foreground mt-2">Ajouter une photo</p>
-                  </>
-                )}
-                <p className="text-[10px] text-muted-foreground mt-2">
-                  {imagePreview ? "Changer la photo" : "Choisir une image ou prendre une photo"}
-                </p>
-              </label>
-              <input id="product-image" type="file" accept="image/*" capture="environment" className="hidden" onChange={handleImageChange} />
-              {imageError && <p className="text-[10px] text-destructive mt-2">{imageError}</p>}
-            </div>
+        <form onSubmit={handleSubmit} className="space-y-5">
+          {/* Image */}
+          <div className="border-2 border-dashed rounded-2xl p-6 text-center transition-colors">
+            <label htmlFor="product-image" className="cursor-pointer">
+              {imagePreview ? (
+                <img src={imagePreview} alt="Aperçu" className="mx-auto h-28 w-28 rounded-3xl object-cover" />
+              ) : (
+                <>
+                  <ImagePlus className="w-8 h-8 text-muted-foreground mx-auto" />
+                  <p className="text-xs text-muted-foreground mt-2">Ajouter une photo</p>
+                </>
+              )}
+              <p className="text-[10px] text-muted-foreground mt-2">
+                {imagePreview ? "Changer la photo" : "Choisir une image ou prendre une photo"}
+              </p>
+            </label>
+            <input id="product-image" type="file" accept="image/*" capture="environment" className="hidden" onChange={handleImageChange} />
+            {imageError && <p className="text-[10px] text-destructive mt-2">{imageError}</p>}
+          </div>
 
-            {/* Nom */}
+          {/* Nom */}
+          <div className="space-y-1.5">
+            <label className="text-xs font-semibold text-foreground">Nom du produit</label>
+            <input type="text" required value={form.name} onChange={(e) => update("name", e.target.value)} placeholder="Ex: Yaourts nature bio (x6)" className="w-full px-4 py-3 rounded-2xl border bg-card text-sm focus:outline-none focus:ring-2 focus:ring-primary/20" />
+          </div>
+
+          {/* Description */}
+          <div className="space-y-1.5">
+            <label className="text-xs font-semibold text-foreground">Description courte</label>
+            <textarea required rows={2} value={form.description} onChange={(e) => update("description", e.target.value)} placeholder="Décrivez brièvement le produit..." className="w-full px-4 py-3 rounded-2xl border bg-card text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 resize-none" />
+          </div>
+
+          {/* Catégorie */}
+          <div className="space-y-1.5">
+            <label className="text-xs font-semibold text-foreground">Catégorie</label>
+            <div className="flex flex-wrap gap-2">
+              {categories.map((cat) => (
+                <button type="button" key={cat} onClick={() => update("category", cat)}
+                  className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all active:scale-95 ${form.category === cat ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"}`}>
+                  {cat}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Prix */}
+          <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-foreground">Nom du produit</label>
-              <input type="text" required value={form.name} onChange={(e) => update("name", e.target.value)} placeholder="Ex: Yaourts nature bio (x6)" className="w-full px-4 py-3 rounded-2xl border bg-card text-sm focus:outline-none focus:ring-2 focus:ring-primary/20" />
+              <label className="text-xs font-semibold text-foreground">Prix normal (FCFA)</label>
+              <input type="number" step="1" min="0" required value={form.originalPrice} onChange={(e) => update("originalPrice", e.target.value)} placeholder="2 500" className="w-full px-4 py-3 rounded-2xl border bg-card text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 tabular-nums" />
             </div>
-
-            {/* Description */}
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-foreground">Description courte</label>
-              <textarea required rows={2} value={form.description} onChange={(e) => update("description", e.target.value)} placeholder="Décrivez brièvement le produit..." className="w-full px-4 py-3 rounded-2xl border bg-card text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 resize-none" />
+              <label className="text-xs font-semibold text-foreground">Prix réduit (FCFA)</label>
+              <input type="number" step="1" min="0" required value={form.reducedPrice} onChange={(e) => update("reducedPrice", e.target.value)} placeholder="1 000" className="w-full px-4 py-3 rounded-2xl border bg-card text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 tabular-nums" />
             </div>
+          </div>
+          {discount > 0 && <p className="text-xs text-primary font-semibold">→ Réduction de {discount}%</p>}
 
-            {/* Catégorie */}
+          {/* Date & Quantité */}
+          <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-foreground">Catégorie</label>
-              <div className="flex flex-wrap gap-2">
-                {categories.map((cat) => (
-                  <button type="button" key={cat} onClick={() => update("category", cat)}
-                    className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all active:scale-95 ${form.category === cat ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"}`}>
-                    {cat}
-                  </button>
-                ))}
-              </div>
+              <label className="text-xs font-semibold text-foreground">Date péremption</label>
+              <input type="date" required value={form.expiryDate} onChange={(e) => update("expiryDate", e.target.value)} className="w-full px-4 py-3 rounded-2xl border bg-card text-sm focus:outline-none focus:ring-2 focus:ring-primary/20" />
             </div>
-
-            {/* Prix */}
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-foreground">Prix normal (FCFA)</label>
-                <input type="number" step="1" min="0" required value={form.originalPrice} onChange={(e) => update("originalPrice", e.target.value)} placeholder="2 500" className="w-full px-4 py-3 rounded-2xl border bg-card text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 tabular-nums" />
-              </div>
-              <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-foreground">Prix réduit (FCFA)</label>
-                <input type="number" step="1" min="0" required value={form.reducedPrice} onChange={(e) => update("reducedPrice", e.target.value)} placeholder="1 000" className="w-full px-4 py-3 rounded-2xl border bg-card text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 tabular-nums" />
-              </div>
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-foreground">Quantité</label>
+              <input type="number" min="1" required value={form.quantity} onChange={(e) => update("quantity", e.target.value)} className="w-full px-4 py-3 rounded-2xl border bg-card text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 tabular-nums" />
             </div>
-            {discount > 0 && <p className="text-xs text-primary font-semibold">→ Réduction de {discount}%</p>}
+          </div>
 
-            {/* Date & Quantité */}
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-foreground">Date péremption</label>
-                <input type="date" required value={form.expiryDate} onChange={(e) => update("expiryDate", e.target.value)} className="w-full px-4 py-3 rounded-2xl border bg-card text-sm focus:outline-none focus:ring-2 focus:ring-primary/20" />
-              </div>
-              <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-foreground">Quantité</label>
-                <input type="number" min="1" required value={form.quantity} onChange={(e) => update("quantity", e.target.value)} className="w-full px-4 py-3 rounded-2xl border bg-card text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 tabular-nums" />
-              </div>
-            </div>
-
-            {/* Submit */}
-            <button type="submit" disabled={uploading}
-              className="w-full flex items-center justify-center gap-2 bg-primary text-primary-foreground py-4 rounded-2xl font-semibold active:scale-[0.98] transition-transform shadow-lg shadow-primary/20 disabled:opacity-60">
-              <Check className="w-5 h-5" />
-              {uploading ? "Publication en cours..." : "Publier le produit"}
-            </button>
-          </form>
+          {/* Submit */}
+          <button type="submit" disabled={uploading}
+            className="w-full flex items-center justify-center gap-2 bg-primary text-primary-foreground py-4 rounded-2xl font-semibold active:scale-[0.98] transition-transform shadow-lg shadow-primary/20 disabled:opacity-60">
+            <Check className="w-5 h-5" />
+            {uploading ? "Publication en cours..." : "Publier le produit"}
+          </button>
+        </form>
       </div>
     </MobileLayout>
   );
