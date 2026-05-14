@@ -65,7 +65,29 @@ function SubscriptionBanner({ sub, onPayNow }: { sub: SubscriptionInfo; onPayNow
     );
   }
 
-  return null;
+  /* status === 'none' : pas encore d'essai démarré */
+  return (
+    <div className="mx-4 mb-3 bg-amber-50 border border-amber-200 rounded-2xl p-4 space-y-3">
+      <div className="flex items-center gap-3">
+        <div className="w-10 h-10 bg-amber-100 rounded-xl flex items-center justify-center flex-shrink-0">
+          <Clock className="w-5 h-5 text-amber-600" />
+        </div>
+        <div>
+          <p className="text-sm font-bold text-amber-900">Vous êtes en période d'essai de 7 jours</p>
+          <p className="text-xs text-amber-700">Publiez vos produits gratuitement pendant 7 jours</p>
+        </div>
+      </div>
+      <button
+        onClick={onPayNow}
+        className="w-full py-3.5 rounded-2xl font-bold text-sm text-white bg-amber-500 shadow-lg shadow-amber-500/20 active:scale-[0.98] transition-transform"
+      >
+        S'abonner — 1 000 F CFA / mois
+      </button>
+      <p className="text-[11px] text-center text-amber-700">
+        30 jours d'accès · démarre à la fin de l'essai
+      </p>
+    </div>
+  );
 }
 
 /* ── Modal de renouvellement (abonnement expiré) ─────────────── */
