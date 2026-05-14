@@ -27,7 +27,11 @@ export default defineConfig(({ mode }) => ({
       registerType: "autoUpdate",
       includeAssets: ["favicon.ico", "apple-touch-icon.png", "pwa-192x192.png", "pwa-512x512.png"],
       workbox: {
-        navigateFallbackDenylist: [/^\/~oauth/],
+        navigateFallback: "/index.html",
+        navigateFallbackDenylist: [/^\/~oauth/, /^\/api\//],
+        cleanupOutdatedCaches: true,
+        clientsClaim: true,
+        skipWaiting: true,
         globPatterns: ["**/*.{js,css,html,ico,png,svg,jpg,jpeg,webp,woff,woff2}"],
       },
       manifest: {
@@ -36,7 +40,7 @@ export default defineConfig(({ mode }) => ({
         description: "Sauvez des aliments, faites des économies. Anti-gaspillage alimentaire.",
         theme_color: "#1a5c2a",
         background_color: "#fcfcfc",
-        display: "standalone",
+        display: "browser",
         orientation: "portrait",
         scope: "/",
         start_url: "/",
