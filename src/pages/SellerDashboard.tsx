@@ -363,11 +363,6 @@ const SellerDashboard = () => {
         title="Mes produits"
         rightAction={
           <div className="flex items-center gap-2">
-            <button type="button" onClick={onLogout}
-              className="text-xs text-muted-foreground hover:text-destructive transition-colors flex items-center gap-1">
-              <LogOut className="w-4 h-4" />
-              Déconnexion
-            </button>
             <button type="button" onClick={handleOpenNotifs} className="relative w-9 h-9 rounded-xl bg-muted flex items-center justify-center">
               <Bell className="w-5 h-5 text-foreground" />
               {unreadCount > 0 && (
@@ -417,6 +412,22 @@ const SellerDashboard = () => {
       )}
 
       <div className="px-4 py-4 space-y-4">
+        {/* Déconnexion + S'abonner */}
+        <div className="space-y-2">
+          <button type="button" onClick={onLogout}
+            className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl border border-border text-sm font-semibold text-muted-foreground bg-card active:scale-[0.98] transition-transform">
+            <LogOut className="w-4 h-4" />
+            Déconnexion
+          </button>
+          <button
+            onClick={() => setShowSubscription(true)}
+            className="w-full flex items-center justify-center gap-2 py-3.5 rounded-2xl font-bold text-sm text-white bg-green-500 shadow-lg shadow-green-500/20 active:scale-[0.98] transition-transform"
+          >
+            <Star className="w-4 h-4" />
+            S'abonner — 1 000 F CFA / mois
+          </button>
+        </div>
+
         {/* Stats */}
         <ScrollReveal>
           <div className="flex gap-3 overflow-x-auto no-scrollbar -mx-4 px-4">
@@ -435,28 +446,6 @@ const SellerDashboard = () => {
         </ScrollReveal>
 
         <p className="text-xs text-muted-foreground">{myProducts.length} produit{myProducts.length > 1 ? "s" : ""} en ligne</p>
-
-        {/* Carte abonnement — toujours visible */}
-        <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 space-y-3">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-amber-100 rounded-xl flex items-center justify-center flex-shrink-0">
-              <Clock className="w-5 h-5 text-amber-600" />
-            </div>
-            <div>
-              <p className="text-sm font-bold text-amber-900">Vous êtes en période d'essai de 7 jours</p>
-              <p className="text-xs text-amber-700">Abonnez-vous pour continuer après l'essai</p>
-            </div>
-          </div>
-          <button
-            onClick={() => setShowSubscription(true)}
-            className="w-full py-3.5 rounded-2xl font-bold text-sm text-white bg-amber-500 shadow-lg shadow-amber-500/20 active:scale-[0.98] transition-transform"
-          >
-            S'abonner — 1 000 F CFA / mois
-          </button>
-          <p className="text-[11px] text-center text-amber-700">
-            30 jours d'accès · démarre à la fin de l'essai
-          </p>
-        </div>
 
         {/* Products */}
         <div className="space-y-3">
