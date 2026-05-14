@@ -13,7 +13,6 @@ import MobileLayout from "@/components/MobileLayout";
 import MobileHeader from "@/components/MobileHeader";
 import { useAuth } from "@/context/AuthContext";
 import { Eye, EyeOff } from "lucide-react";
-import { getSellerProfile, getClientLocation } from "@/lib/mock-data";
 import { toast } from "@/components/ui/sonner";
 
 type AuthMethod = "email" | "phone";
@@ -23,7 +22,7 @@ const Auth = () => {
   const params = useParams<{ role: UserRole }>();
   const role: UserRole =
     params.role === "client" || params.role === "seller" ? params.role : "client";
-  const { loading: authLoading, setUserDirectly } = useAuth();
+  const { loading: authLoading, user: contextUser, setUserDirectly } = useAuth();
 
   const [mode, setMode] = useState<"login" | "signup">("login");
   const [method, setMethod] = useState<AuthMethod>("email");
@@ -42,39 +41,35 @@ const Auth = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const notifyRole = (userRole: UserRole, attemptedRole: UserRole) => {
-    const label = userRole === "seller" ? "vendeur" : "acheteur";
+    toast.success("Connexion réussie !", { duration: 3000 });
     if (userRole !== attemptedRole) {
+      const label = userRole === "seller" ? "vendeur" : "acheteur";
       toast.info(
         `Cette adresse est associée à un compte ${label}. Vous êtes redirigé vers l'espace ${label}.`,
         { duration: 5000 }
       );
-    } else {
-      toast.success(`Connecté en tant que ${label}.`, { duration: 3000 });
     }
   };
 
   useEffect(() => {
-    if (!authLoading) {
-      const user = getCurrentUser();
-      if (user) {
-        const isOAuthCallback = localStorage.getItem("alimconnect-oauth-pending") === "true";
-        if (isOAuthCallback) {
-          localStorage.removeItem("alimconnect-oauth-pending");
-          notifyRole(user.role, role);
-        }
-        nav(user);
+    if (authLoading) return;
+    const u = contextUser;
+    if (u) {
+      const isOAuthCallback = localStorage.getItem("alimconnect-oauth-pending") === "true";
+      if (isOAuthCallback) {
+        localStorage.removeItem("alimconnect-oauth-pending");
+        notifyRole(u.role, role);
       }
+      nav(u);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [authLoading, navigate, role]);
+  }, [authLoading, contextUser]);
 
-  const nav = async (user: { id: string; role: UserRole }) => {
+  const nav = (user: { id: string; role: UserRole }) => {
     if (user.role === "seller") {
-      const profile = await getSellerProfile(user.id);
-      navigate(profile ? "/seller/dashboard" : "/seller/onboarding", { replace: true });
+      navigate("/seller/dashboard", { replace: true });
     } else {
-      const loc = await getClientLocation(user.id);
-      navigate(loc ? "/marketplace" : "/client/location", { replace: true });
+      navigate("/marketplace", { replace: true });
     }
   };
 

@@ -73,6 +73,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               }
             } catch {
               // silencieux
+            } finally {
+              setLoading(false);
             }
           }, 100);
         }

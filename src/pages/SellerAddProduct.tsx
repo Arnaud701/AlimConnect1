@@ -1,10 +1,12 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, ImagePlus, Check } from "lucide-react";
 import MobileLayout from "@/components/MobileLayout";
-import { insertProductToDB, uploadProductImageWeb } from "@/lib/mock-data";
+import { insertProductToDB, uploadProductImageWeb, fetchProductsBySellerFromDB } from "@/lib/mock-data";
 import { useAuth } from "@/context/AuthContext";
 import { toast } from "sonner";
+import { getSubscription } from "@/lib/subscription";
+import TrialWelcomeModal from "@/components/TrialWelcomeModal";
 
 const categories = ["Boulangerie", "Produits laitiers", "Fruits & Légumes", "Plats préparés", "Viandes", "Boissons", "Autre"];
 
@@ -25,6 +27,8 @@ const SellerAddProduct = () => {
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [imageError, setImageError] = useState("");
   const [uploading, setUploading] = useState(false);
+  const [showSubModal, setShowSubModal] = useState(false);
+  const pendingSubmitRef = useRef(false);
 
   useEffect(() => {
     if (!loading && (!user || user.role !== "seller")) {
@@ -54,14 +58,10 @@ const SellerAddProduct = () => {
     setImagePreview(URL.createObjectURL(file));
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!imageFile) { toast.error("Veuillez ajouter une photo du produit."); return; }
-    if (!form.category) { toast.error("Veuillez choisir une catégorie."); return; }
-
+  const publishProduct = async () => {
     setUploading(true);
     try {
-      const imageUrl = await uploadProductImageWeb(imageFile, user.id);
+      const imageUrl = await uploadProductImageWeb(imageFile!, user.id);
       await insertProductToDB({
         name: form.name.trim(),
         description: form.description.trim(),
@@ -82,11 +82,43 @@ const SellerAddProduct = () => {
     }
   };
 
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!imageFile) { toast.error("Veuillez ajouter une photo du produit."); return; }
+    if (!form.category) { toast.error("Veuillez choisir une catégorie."); return; }
+
+    const [products, sub] = await Promise.all([
+      fetchProductsBySellerFromDB(user.id),
+      getSubscription(user.id),
+    ]);
+
+    const needsSub = sub.status === "none" || sub.status === "expired";
+    if (products.length >= 3 && needsSub) {
+      pendingSubmitRef.current = true;
+      setShowSubModal(true);
+      return;
+    }
+
+    await publishProduct();
+  };
+
+  const handleSubDone = async () => {
+    setShowSubModal(false);
+    if (pendingSubmitRef.current) {
+      pendingSubmitRef.current = false;
+      await publishProduct();
+    }
+  };
+
   const update = (field: string, value: string) => setForm((prev) => ({ ...prev, [field]: value }));
   const discount =
     form.originalPrice && form.reducedPrice
       ? Math.round(((parseFloat(form.originalPrice) - parseFloat(form.reducedPrice)) / parseFloat(form.originalPrice)) * 100)
       : 0;
+
+  if (showSubModal) {
+    return <TrialWelcomeModal sellerId={user.id} onDone={handleSubDone} />;
+  }
 
   return (
     <MobileLayout mode="seller">

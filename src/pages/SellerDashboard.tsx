@@ -6,7 +6,6 @@ import { formatPriceFcfa } from "@/lib/utils";
 import MobileLayout from "@/components/MobileLayout";
 import MobileHeader from "@/components/MobileHeader";
 import ScrollReveal from "@/components/ScrollReveal";
-import TrialWelcomeModal from "@/components/TrialWelcomeModal";
 import {
   fetchProductsBySellerFromDB, deleteProductFromDB, getSellerStats,
   getDaysUntilExpiry, getExpiryLabel, getDiscountPercentage, Product,
@@ -264,22 +263,6 @@ const SellerDashboard = () => {
 
   if (loading || subLoading) return null;
   if (!user) return null;
-
-  /* ── Modale d'accueil (premier login, status = 'none') ────── */
-  if (sub?.status === "none") {
-    return (
-      <TrialWelcomeModal
-        sellerId={user.id}
-        onDone={(trialStartAt) => setSub({
-          status: "trial",
-          trialStartAt,
-          trialDaysLeft: 7,
-          subscriptionExpiresAt: null,
-          subDaysLeft: 0,
-        })}
-      />
-    );
-  }
 
   /* ── Écran bloqué (abonnement expiré) ────────────────────── */
   if (sub?.status === "expired") {
