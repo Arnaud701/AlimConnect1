@@ -77,80 +77,7 @@ export const sellers: Seller[] = [
   },
 ];
 
-export const products: Product[] = [
-  {
-    id: "1",
-    name: "Yaourts nature bio (x6)",
-    description: "Lot de 6 yaourts nature bio, texture onctueuse et goût authentique.",
-    originalPrice: 4.2,
-    reducedPrice: 1.5,
-    expiryDate: "2026-06-23",
-    image: "https://images.unsplash.com/photo-1488477181946-6428a0291777?w=400&h=300&fit=crop",
-    category: "Produits laitiers",
-    sellerId: "1",
-    quantity: 8,
-  },
-  {
-    id: "2",
-    name: "Baguettes tradition (x3)",
-    description: "Baguettes tradition croustillantes du jour, cuites sur pierre.",
-    originalPrice: 3.9,
-    reducedPrice: 1.2,
-    expiryDate: "2026-04-22",
-    image: "https://images.unsplash.com/photo-1549931319-a545753467c8?w=400&h=300&fit=crop",
-    category: "Boulangerie",
-    sellerId: "4",
-    quantity: 5,
-  },
-  {
-    id: "3",
-    name: "Salade composée",
-    description: "Salade fraîche avec poulet grillé, tomates cerises et vinaigrette maison.",
-    originalPrice: 6.5,
-    reducedPrice: 2.8,
-    expiryDate: "2026-04-22",
-    image: "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=400&h=300&fit=crop",
-    category: "Plats préparés",
-    sellerId: "2",
-    quantity: 3,
-  },
-  {
-    id: "4",
-    name: "Lot de fruits variés",
-    description: "Pommes, bananes et oranges légèrement abîmées mais parfaitement consommables.",
-    originalPrice: 5.0,
-    reducedPrice: 1.9,
-    expiryDate: "2026-04-24",
-    image: "https://images.unsplash.com/photo-1619566636858-adf3ef46400b?w=400&h=300&fit=crop",
-    category: "Fruits & Légumes",
-    sellerId: "3",
-    quantity: 12,
-  },
-  {
-    id: "5",
-    name: "Croissants au beurre (x4)",
-    description: "Croissants pur beurre feuilletés, dorés à souhait.",
-    originalPrice: 4.8,
-    reducedPrice: 1.6,
-    expiryDate: "2026-04-22",
-    image: "https://images.unsplash.com/photo-1555507036-ab1f4038024a?w=400&h=300&fit=crop",
-    category: "Boulangerie",
-    sellerId: "4",
-    quantity: 6,
-  },
-  {
-    id: "6",
-    name: "Fromage camembert",
-    description: "Camembert de Normandie AOP, affiné au lait cru.",
-    originalPrice: 3.8,
-    reducedPrice: 1.4,
-    expiryDate: "2026-05-25",
-    image: "https://images.unsplash.com/photo-1452195100486-9cc805987862?w=400&h=300&fit=crop",
-    category: "Produits laitiers",
-    sellerId: "1",
-    quantity: 4,
-  },
-];
+export const products: Product[] = [];
 
 export interface SellerProfile {
   id: string;
@@ -258,9 +185,7 @@ export async function deleteProductFromDB(productId: string): Promise<void> {
 }
 
 export async function getAllProducts(): Promise<Product[]> {
-  const dbProducts = await fetchProductsFromDB();
-  if (dbProducts.length > 0) return dbProducts;
-  return products;
+  return fetchProductsFromDB();
 }
 
 // ── Haversine distance (km) ────────────────────────────────────────
