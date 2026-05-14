@@ -221,16 +221,16 @@ const SellerDashboard = () => {
   const [notifications, setNotifications] = useState<SellerNotification[]>([]);
   const [showNotifs, setShowNotifs] = useState(false);
 
-  const [sub, setSub] = useState<SubscriptionInfo | null>(null);
-  const [subLoading, setSubLoading] = useState(true);
+  const [sub, setSub] = useState<SubscriptionInfo>({ status: 'none', trialStartAt: null, trialDaysLeft: 0, subscriptionExpiresAt: null, subDaysLeft: 0 });
   const [showRenewal, setShowRenewal] = useState(false);
 
   const unreadCount = notifications.filter((n) => !n.read).length;
 
   const refreshSub = async (userId: string) => {
-    const info = await getSubscription(userId);
-    setSub(info);
-    setSubLoading(false);
+    try {
+      const info = await getSubscription(userId);
+      setSub(info);
+    } catch { /* garde la valeur par défaut */ }
   };
 
   useEffect(() => {
@@ -291,11 +291,11 @@ const SellerDashboard = () => {
     } catch { /* silently fail */ }
   };
 
-  if (loading || subLoading) return null;
+  if (loading) return null;
   if (!user) return null;
 
   /* ── Écran bloqué (abonnement expiré) ────────────────────── */
-  if (sub?.status === "expired") {
+  if (sub.status === "expired") {
     if (showRenewal) {
       return (
         <RenewalModal
@@ -364,10 +364,10 @@ const SellerDashboard = () => {
       />
 
       {/* Bannière abonnement */}
-      {sub && <SubscriptionBanner sub={sub} onPayNow={() => setShowRenewal(true)} />}
+      <SubscriptionBanner sub={sub} onPayNow={() => setShowRenewal(true)} />
 
       {/* Modal renouvellement depuis la bannière */}
-      {showRenewal && sub && (
+      {showRenewal && (
         <RenewalModal
           sub={sub}
           sellerId={user.id}
