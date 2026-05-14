@@ -93,7 +93,7 @@ const SellerAddProduct = () => {
     ]);
 
     const needsSub = sub.status === "none" || sub.status === "expired";
-    if (products.length >= 3 && needsSub) {
+    if (products.length < 3 && needsSub) {
       pendingSubmitRef.current = true;
       setShowSubModal(true);
       return;
