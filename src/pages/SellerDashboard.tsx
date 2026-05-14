@@ -24,13 +24,11 @@ const isMobile = () => /Android|iPhone|iPad|iPod|Opera Mini|IEMobile|WPDesktop/i
 function SubscriptionBanner({ sub, onPayNow }: { sub: SubscriptionInfo; onPayNow: () => void }) {
   if (sub.status === "active") {
     return (
-      <div className="mx-4 mb-2 bg-green-50 border border-green-200 rounded-2xl px-4 py-3 flex items-center justify-between gap-2">
-        <div className="flex items-center gap-2">
-          <ShieldCheck className="w-4 h-4 text-green-600 flex-shrink-0" />
-          <p className="text-xs font-semibold text-green-800">
-            Abonnement actif · {sub.subDaysLeft} jour{sub.subDaysLeft > 1 ? "s" : ""} restant{sub.subDaysLeft > 1 ? "s" : ""}
-          </p>
-        </div>
+      <div className="mx-4 mb-3 bg-green-50 border border-green-200 rounded-2xl px-4 py-3 flex items-center gap-2">
+        <ShieldCheck className="w-4 h-4 text-green-600 flex-shrink-0" />
+        <p className="text-xs font-semibold text-green-800">
+          Abonnement actif · {sub.subDaysLeft} jour{sub.subDaysLeft > 1 ? "s" : ""} restant{sub.subDaysLeft > 1 ? "s" : ""}
+        </p>
       </div>
     );
   }
@@ -38,21 +36,31 @@ function SubscriptionBanner({ sub, onPayNow }: { sub: SubscriptionInfo; onPayNow
   if (sub.status === "trial") {
     const urgent = sub.trialDaysLeft <= 2;
     return (
-      <div className={`mx-4 mb-2 border rounded-2xl px-4 py-3 flex items-center justify-between gap-3 ${urgent ? "bg-red-50 border-red-200" : "bg-amber-50 border-amber-200"}`}>
-        <div className="flex items-center gap-2 min-w-0">
-          <Clock className={`w-4 h-4 flex-shrink-0 ${urgent ? "text-red-500" : "text-amber-600"}`} />
-          <p className={`text-xs font-semibold ${urgent ? "text-red-800" : "text-amber-800"}`}>
-            {sub.trialDaysLeft === 0
-              ? "Essai expiré"
-              : `Essai gratuit · ${sub.trialDaysLeft} jour${sub.trialDaysLeft > 1 ? "s" : ""} restant${sub.trialDaysLeft > 1 ? "s" : ""}`}
-          </p>
+      <div className={`mx-4 mb-3 border rounded-2xl p-4 space-y-3 ${urgent ? "bg-red-50 border-red-200" : "bg-amber-50 border-amber-200"}`}>
+        <div className="flex items-center gap-3">
+          <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${urgent ? "bg-red-100" : "bg-amber-100"}`}>
+            <Clock className={`w-5 h-5 ${urgent ? "text-red-500" : "text-amber-600"}`} />
+          </div>
+          <div>
+            <p className={`text-sm font-bold ${urgent ? "text-red-900" : "text-amber-900"}`}>
+              Vous êtes en période d'essai de 7 jours
+            </p>
+            <p className={`text-xs ${urgent ? "text-red-700" : "text-amber-700"}`}>
+              {sub.trialDaysLeft === 0
+                ? "Essai expiré — abonnez-vous pour continuer"
+                : `${sub.trialDaysLeft} jour${sub.trialDaysLeft > 1 ? "s" : ""} restant${sub.trialDaysLeft > 1 ? "s" : ""}`}
+            </p>
+          </div>
         </div>
         <button
           onClick={onPayNow}
-          className={`flex-shrink-0 text-xs font-bold px-3 py-1.5 rounded-full ${urgent ? "bg-red-500 text-white" : "bg-amber-500 text-white"}`}
+          className={`w-full py-3.5 rounded-2xl font-bold text-sm text-white shadow-lg active:scale-[0.98] transition-transform ${urgent ? "bg-red-500 shadow-red-500/20" : "bg-amber-500 shadow-amber-500/20"}`}
         >
-          S'abonner
+          S'abonner — 1 000 F CFA / mois
         </button>
+        <p className={`text-[11px] text-center ${urgent ? "text-red-600" : "text-amber-700"}`}>
+          30 jours d'accès · démarre à la fin de l'essai
+        </p>
       </div>
     );
   }
@@ -152,7 +160,7 @@ function RenewalModal({
     <div className="fixed inset-0 z-50 bg-background flex flex-col">
       <header className="bg-card border-b"><div className="flex items-center gap-3 h-14 px-4">
         <button onClick={onClose} className="w-9 h-9 rounded-xl bg-muted flex items-center justify-center"><ArrowLeft className="w-5 h-5" /></button>
-        <h1 className="text-lg font-bold text-foreground">Renouveler l'abonnement</h1>
+        <h1 className="text-lg font-bold text-foreground">S'abonner — 1 000 F CFA / mois</h1>
       </div></header>
       <div className="px-4 py-6 space-y-4">
         <div className="bg-card rounded-2xl border p-5 space-y-1">
