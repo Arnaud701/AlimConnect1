@@ -141,7 +141,17 @@ export const registerUser = async (
   if (error) throw new Error(error.message);
   if (!data.user) throw new Error('Erreur lors de la création du compte.');
 
-  // Attendre que le lock auth soit libéré avant de créer le profil
+  // Si Supabase renvoie une session directement (confirmation email désactivée)
+  // on est déjà connecté. Sinon on tente une connexion immédiate.
+  if (!data.session) {
+    const { error: signInError } = await supabase.auth.signInWithPassword(
+      trimmedEmail ? { email: trimmedEmail, password } : { phone: trimmedPhone, password }
+    );
+    if (signInError) throw new Error(
+      'Compte créé. Vérifiez votre boîte mail pour confirmer votre adresse avant de vous connecter.'
+    );
+  }
+
   await new Promise((r) => setTimeout(r, 200));
 
   const profile = await ensureProfile(data.user.id, role, {
