@@ -33,7 +33,14 @@ export default defineConfig(({ mode }) => ({
         cleanupOutdatedCaches: true,
         clientsClaim: true,
         skipWaiting: true,
-        globPatterns: ["**/*.{js,css,html,ico,png,svg,jpg,jpeg,webp,woff,woff2}"],
+        globPatterns: ["**/*.{css,html,ico,png,svg,jpg,jpeg,webp,woff,woff2}"],
+        runtimeCaching: [
+          {
+            urlPattern: /\.js$/,
+            handler: "NetworkFirst",
+            options: { cacheName: "js-cache", networkTimeoutSeconds: 5 },
+          },
+        ],
       },
       manifest: {
         name: "AlimConnect",
