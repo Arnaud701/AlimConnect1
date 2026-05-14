@@ -14,6 +14,7 @@ import MobileHeader from "@/components/MobileHeader";
 import { useAuth } from "@/context/AuthContext";
 import { Eye, EyeOff } from "lucide-react";
 import { getSellerProfile, getClientLocation } from "@/lib/mock-data";
+import { toast } from "@/components/ui/sonner";
 
 type AuthMethod = "email" | "phone";
 
@@ -40,13 +41,31 @@ const Auth = () => {
   const [success, setSuccess] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  const notifyRole = (userRole: UserRole, attemptedRole: UserRole) => {
+    const label = userRole === "seller" ? "vendeur" : "acheteur";
+    if (userRole !== attemptedRole) {
+      toast.info(
+        `Cette adresse est associée à un compte ${label}. Vous êtes redirigé vers l'espace ${label}.`,
+        { duration: 5000 }
+      );
+    } else {
+      toast.success(`Connecté en tant que ${label}.`, { duration: 3000 });
+    }
+  };
+
   useEffect(() => {
     if (!authLoading) {
       const user = getCurrentUser();
-      if (user && user.role === role) {
-        navigate(user.role === "seller" ? "/seller/dashboard" : "/marketplace", { replace: true });
+      if (user) {
+        const isOAuthCallback = localStorage.getItem("alimconnect-oauth-pending") === "true";
+        if (isOAuthCallback) {
+          localStorage.removeItem("alimconnect-oauth-pending");
+          notifyRole(user.role, role);
+        }
+        nav(user);
       }
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [authLoading, navigate, role]);
 
   const nav = async (user: { id: string; role: UserRole }) => {
@@ -67,10 +86,12 @@ const Auth = () => {
       if (mode === "login") {
         const user = await loginUser(role, email, "", password);
         setUserDirectly(user);
+        notifyRole(user.role, role);
         nav(user);
       } else {
         const user = await registerUser(role, firstName, lastName, email, "", password);
         setUserDirectly(user);
+        notifyRole(user.role, role);
         nav(user);
       }
     } catch (e) {
@@ -102,6 +123,7 @@ const Auth = () => {
     try {
       const user = await verifyPhoneOTP(phone, otp, role);
       setUserDirectly(user);
+      notifyRole(user.role, role);
       nav(user);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Code invalide.");
@@ -113,11 +135,15 @@ const Auth = () => {
   const handleGoogleSignIn = async () => {
     setError(null);
     localStorage.setItem("alimconnect-pending-role", role);
+    localStorage.setItem("alimconnect-oauth-pending", "true");
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: { redirectTo: window.location.origin + "/auth/" + role },
     });
-    if (error) setError(error.message);
+    if (error) {
+      localStorage.removeItem("alimconnect-oauth-pending");
+      setError(error.message);
+    }
   };
 
   const inputCls =
