@@ -17,19 +17,28 @@ create table if not exists profiles (
 
 -- 3. Sellers (profil vendeur, id = profiles.id)
 create table if not exists sellers (
-  id              uuid references profiles(id) on delete cascade primary key,
-  name            text not null,
-  type            text check (type in ('supermarché', 'supérette', 'boulangerie', 'épicerie')),
-  address         text,
-  lat             double precision,
-  lng             double precision,
-  rating          double precision default 0,
-  review_count    int default 0,
-  image_url       text,
-  payment_method  text check (payment_method in ('wave', 'orange_money')),
-  payment_number  text,
-  created_at      timestamptz default now()
+  id                      uuid references profiles(id) on delete cascade primary key,
+  name                    text not null,
+  type                    text check (type in ('supermarché', 'supérette', 'boulangerie', 'épicerie')),
+  address                 text,
+  lat                     double precision,
+  lng                     double precision,
+  rating                  double precision default 0,
+  review_count            int default 0,
+  image_url               text,
+  payment_method          text check (payment_method in ('wave', 'orange_money')),
+  payment_number          text,
+  -- Abonnement / essai gratuit
+  trial_start_at          timestamptz,
+  subscription_status     text default 'none' check (subscription_status in ('none', 'trial', 'active', 'expired')),
+  subscription_expires_at timestamptz,
+  created_at              timestamptz default now()
 );
+
+-- Migration : ajouter les colonnes d'abonnement si la table existe déjà
+alter table sellers add column if not exists trial_start_at          timestamptz;
+alter table sellers add column if not exists subscription_status     text default 'none';
+alter table sellers add column if not exists subscription_expires_at timestamptz;
 
 -- 4. Products
 create table if not exists products (
