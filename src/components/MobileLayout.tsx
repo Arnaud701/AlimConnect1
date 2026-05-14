@@ -8,7 +8,7 @@ interface MobileLayoutProps {
 }
 
 const clientRoutes = ["/marketplace", "/sellers", "/", "/map", "/client/transactions"];
-const sellerRoutes = ["/seller/dashboard", "/seller/add", "/marketplace"];
+const sellerRoutes = ["/seller/dashboard", "/marketplace"];
 
 const MobileLayout = ({ children, mode }: MobileLayoutProps) => {
   const navigate = useNavigate();
