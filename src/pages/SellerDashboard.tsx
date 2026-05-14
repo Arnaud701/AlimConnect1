@@ -428,33 +428,27 @@ const SellerDashboard = () => {
 
         <p className="text-xs text-muted-foreground">{myProducts.length} produit{myProducts.length > 1 ? "s" : ""} en ligne</p>
 
-        {/* Carte abonnement — visible sauf si abonnement actif */}
-        {sub.status !== "active" && (
-          <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 space-y-3">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-amber-100 rounded-xl flex items-center justify-center flex-shrink-0">
-                <Clock className="w-5 h-5 text-amber-600" />
-              </div>
-              <div>
-                <p className="text-sm font-bold text-amber-900">
-                  {sub.status === "trial"
-                    ? `Période d'essai — ${sub.trialDaysLeft} jour${sub.trialDaysLeft > 1 ? "s" : ""} restant${sub.trialDaysLeft > 1 ? "s" : ""}`
-                    : "Vous êtes en période d'essai de 7 jours"}
-                </p>
-                <p className="text-xs text-amber-700">Abonnez-vous pour continuer après l'essai</p>
-              </div>
+        {/* Carte abonnement — toujours visible */}
+        <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 space-y-3">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-amber-100 rounded-xl flex items-center justify-center flex-shrink-0">
+              <Clock className="w-5 h-5 text-amber-600" />
             </div>
-            <button
-              onClick={() => setShowRenewal(true)}
-              className="w-full py-3.5 rounded-2xl font-bold text-sm text-white bg-amber-500 shadow-lg shadow-amber-500/20 active:scale-[0.98] transition-transform"
-            >
-              S'abonner — 1 000 F CFA / mois
-            </button>
-            <p className="text-[11px] text-center text-amber-700">
-              30 jours d'accès · démarre à la fin de l'essai
-            </p>
+            <div>
+              <p className="text-sm font-bold text-amber-900">Vous êtes en période d'essai de 7 jours</p>
+              <p className="text-xs text-amber-700">Abonnez-vous pour continuer après l'essai</p>
+            </div>
           </div>
-        )}
+          <button
+            onClick={() => setShowRenewal(true)}
+            className="w-full py-3.5 rounded-2xl font-bold text-sm text-white bg-amber-500 shadow-lg shadow-amber-500/20 active:scale-[0.98] transition-transform"
+          >
+            S'abonner — 1 000 F CFA / mois
+          </button>
+          <p className="text-[11px] text-center text-amber-700">
+            30 jours d'accès · démarre à la fin de l'essai
+          </p>
+        </div>
 
         {/* Products */}
         <div className="space-y-3">
