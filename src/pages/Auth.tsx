@@ -149,21 +149,6 @@ const Auth = () => {
       <MobileHeader title={role === "seller" ? "Espace vendeur" : "Espace client"} />
       <div className="px-4 py-5 space-y-4">
 
-        {/* Google */}
-        <button
-          onClick={handleGoogleSignIn}
-          disabled={isSubmitting}
-          className="w-full rounded-xl border bg-card py-2.5 text-sm font-semibold text-foreground hover:bg-muted transition-colors disabled:opacity-60"
-        >
-          Continuer avec Google
-        </button>
-
-        <div className="flex items-center gap-3">
-          <div className="flex-1 h-px bg-border" />
-          <span className="text-xs text-muted-foreground">ou</span>
-          <div className="flex-1 h-px bg-border" />
-        </div>
-
         {/* Méthode */}
         <div className="flex gap-2">
           {(["email", "phone"] as AuthMethod[]).map((m) => (
